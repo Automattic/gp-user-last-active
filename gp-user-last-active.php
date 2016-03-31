@@ -1,6 +1,6 @@
 <?php
 
-class GP_User_Last_Active extends GP_Plugin {
+class GP_User_Last_Active {
 
 	var $id = 'gp_user_last_active';
 
@@ -20,19 +20,17 @@ class GP_User_Last_Active extends GP_Plugin {
 		)
 	);
 
-	public function __construct() {
-		parent::__construct();
+	public function init() {
 		$this->actions = apply_filters( 'gp_user_last_active_actions', $this->actions );
-		$this->add_action( 'after_request', array( 'args' => 2 ) );
+		add_action( 'gp_after_request', array( $this, 'after_request' ), 10, 2 );
 	}
 
 	public function update_last_active() {
-		GP::$user->current()->set_meta( 'gp_last_active', GP::$user->now_in_mysql_format() );
+		update_user_meta( get_current_user_id(), 'gp_last_active', GP::$permission->now_in_mysql_format() );
 	}
 
 	public function get_last_active( $user_id ) {
-		global $gpdb;
-		return $gpdb->get_var( $gpdb->prepare( "SELECT meta_value FROM $gpdb->usermeta WHERE meta_key = 'gp_last_active' AND user_id = %d", $user_id ) );
+		return get_user_meta( $user_id, 'gp_last_active', true );
 	}
 
 	public function after_request( $route, $method ) {
@@ -40,11 +38,18 @@ class GP_User_Last_Active extends GP_Plugin {
 			return;
 		}
 
-		if ( GP::$user->current()->id == 0 ) {
+		if ( ! get_current_user_id()  ) {
 			return;
 		}
 		$this->update_last_active();
 	}
 }
 
-GP::$plugins->gp_user_last_active = new GP_User_Last_Active;
+function gp_get_user_last_active( $user_id ) {
+	global $gp_user_last_active;
+	return $gp_user_last_active->get_last_active( $user_id );
+
+}
+
+$gp_user_last_active = new GP_User_Last_Active;
+add_action( 'gp_init', array( $gp_user_last_active, 'init' ) );
