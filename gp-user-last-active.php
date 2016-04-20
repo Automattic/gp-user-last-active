@@ -20,7 +20,22 @@ class GP_User_Last_Active {
 		)
 	);
 
-	public function init() {
+
+	private static $instance = null;
+
+	public static function init() {
+		self::get_instance();
+	}
+
+	public static function get_instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+		}
+
+		return self::$instance;
+	}
+
+	public function __construct() {
 		$this->actions = apply_filters( 'gp_user_last_active_actions', $this->actions );
 		add_action( 'gp_after_request', array( $this, 'after_request' ), 10, 2 );
 	}
@@ -46,10 +61,9 @@ class GP_User_Last_Active {
 }
 
 function gp_get_user_last_active( $user_id ) {
-	global $gp_user_last_active;
+	$gp_user_last_active = GP_User_Last_Active::get_instance();
 	return $gp_user_last_active->get_last_active( $user_id );
 
 }
 
-$gp_user_last_active = new GP_User_Last_Active;
-add_action( 'gp_init', array( $gp_user_last_active, 'init' ) );
+add_action( 'gp_init', array( 'GP_User_Last_Active', 'init' ) );
